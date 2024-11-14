@@ -21,7 +21,6 @@ router.get('/', getAllTransactions);
 router.post('/', addTransaction);
 router.delete('/:expenseId', deleteTransaction);
 
-// Admin route to view all users and expenses
 router.get('/admin/all', adminAuthMiddleware, getAllUsersAndExpenses);
 
 module.exports = router;
