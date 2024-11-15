@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Bar, Pie, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement, PointElement, LineElement } from 'chart.js';
+import { motion } from 'framer-motion';
 
 ChartJS.register(
     CategoryScale,
@@ -29,7 +30,7 @@ const Reports = ({ expenses = [], fetchExpenses }) => {
     });
 
     useEffect(() => {
-        if (expenses.length === 0 && typeof fetchExpenses === 'function') { // Verify fetchExpenses is a function
+        if (expenses.length === 0 && typeof fetchExpenses === 'function') {
             fetchExpenses();
         } else if (expenses.length > 0) {
             processData(expenses);
@@ -61,7 +62,7 @@ const Reports = ({ expenses = [], fetchExpenses }) => {
                 {
                     label: 'Monthly Expenses',
                     data: Object.values(monthlyTotals),
-                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    backgroundColor: 'rgba(138, 43, 226, 0.7)',
                 },
             ],
         });
@@ -73,11 +74,12 @@ const Reports = ({ expenses = [], fetchExpenses }) => {
                     label: 'Category-wise Expenses',
                     data: Object.values(categoryTotals),
                     backgroundColor: [
-                        'rgba(255, 99, 132, 0.6)',
-                        'rgba(54, 162, 235, 0.6)',
-                        'rgba(255, 206, 86, 0.6)',
-                        'rgba(75, 192, 192, 0.6)',
-                        'rgba(153, 102, 255, 0.6)',
+                        'rgba(255, 99, 132, 0.7)',
+                        'rgba(54, 162, 235, 0.7)',
+                        'rgba(255, 206, 86, 0.7)',
+                        'rgba(75, 192, 192, 0.7)',
+                        'rgba(153, 102, 255, 0.7)',
+                        'rgba(255, 159, 64, 0.7)'
                     ],
                 },
             ],
@@ -89,8 +91,8 @@ const Reports = ({ expenses = [], fetchExpenses }) => {
                 {
                     label: 'Weekly Expenses Trend',
                     data: weeklyTrends,
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.3)',
+                    borderColor: 'rgba(138, 43, 226, 1)',
+                    backgroundColor: 'rgba(138, 43, 226, 0.3)',
                     fill: true,
                 },
             ],
@@ -98,24 +100,30 @@ const Reports = ({ expenses = [], fetchExpenses }) => {
     };
 
     return (
-        <div style={{ padding: '20px' }}>
-            <h1>Reports</h1>
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="bg-gradient-to-br from-gray-900 via-gray-800 to-black p-8 rounded-3xl shadow-2xl max-w-5xl mx-auto mt-12 text-white"
+        >
+            <h1 className="text-3xl font-bold text-purple-400 mb-8 text-center">Expense Reports</h1>
+            <div className="space-y-12">
+                <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h3 className="text-2xl font-semibold text-purple-300 mb-4">Monthly Expenses</h3>
+                    <Bar data={monthlyData} />
+                </div>
 
-            <div style={{ maxWidth: '700px', margin: 'auto', padding: '20px' }}>
-                <h3>Monthly Expenses (Bar Chart)</h3>
-                <Bar data={monthlyData} />
-            </div>
+                <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h3 className="text-2xl font-semibold text-purple-300 mb-4">Category-wise Expenses</h3>
+                    <Pie data={categoryData} />
+                </div>
 
-            <div style={{ maxWidth: '500px', margin: 'auto', padding: '20px' }}>
-                <h3>Category-wise Expenses (Pie Chart)</h3>
-                <Pie data={categoryData} />
+                <div className="bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h3 className="text-2xl font-semibold text-purple-300 mb-4">Weekly Expenses Trend</h3>
+                    <Line data={weeklyTrendData} />
+                </div>
             </div>
-
-            <div style={{ maxWidth: '700px', margin: 'auto', padding: '20px' }}>
-                <h3>Weekly Expenses Trend (Line Chart)</h3>
-                <Line data={weeklyTrendData} />
-            </div>
-        </div>
+        </motion.div>
     );
 };
 
