@@ -1,5 +1,4 @@
 const express = require("express");
-const app = express();
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const AuthRouter = require("./Routes/AuthRouter");
@@ -12,11 +11,11 @@ const ensureAuthenticated = require("./Middlewares/Auth");
 
 require("dotenv").config();
 require("./Models/db");
-const PORT = process.env.PORT || 8080;
+
+const app = express();
 
 // Health Check for Plaid on Startup
 plaidHealthCheck();
-
 
 const allowedOrigins = [
   "http://localhost:3000", // Development
@@ -41,6 +40,5 @@ app.use("/auth", AuthRouter);
 app.use("/expenses", ensureAuthenticated, ExpenseRouter);
 app.use("/plaid", PlaidRouter); // Use the Plaid router
 
-app.listen(PORT, () => {
-  console.log(`Server is running on ${PORT}`);
-});
+// Export the app for Vercel
+module.exports = app;
