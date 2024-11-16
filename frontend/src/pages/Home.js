@@ -7,7 +7,6 @@ import ExpenseTable from './ExpenseTable';
 import ExpenseDetails from './ExpenseDetails';
 import ExpenseForm from './ExpenseForm';
 import Navbar from './Navbar';
-import Reports from './Reports';
 import axios from 'axios';
 import AccountDetails from './AccountDetails';
 import AccountOverview from './AccountOverview';
@@ -207,7 +206,6 @@ function Home() {
                 </div>
                 <div className="flex flex-col items-center lg:items-start space-y-8 w-full max-w-4xl">
                     <ExpenseTable expenses={expenses} deleteExpense={deleteExpense} />
-                    <Reports expenses={expenses} fetchExpenses={fetchExpenses} />
                 </div>
             </div>
             {showAccountOverview && selectedAccount && (
@@ -215,15 +213,15 @@ function Home() {
             )}
             {/* Custom Animated Glow Elements */}
             <motion.div 
-                animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.1, 1] }}
+                animate={{ opacity: [0.1, 0.4, 0.3], scale: [1, 1.1, 1] }}
                 transition={{ duration: 4, repeat: Infinity }}
-                className="absolute -bottom-12 -right-12 w-80 h-80 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 opacity-40 blur-2xl"
+                className="absolute -bottom-12 -right-12 w-80 h-80 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 opacity-10 blur-2xl"
             />
-            <motion.div 
-                animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.05, 1] }}
+            {/* <motion.div 
+                animate={{ opacity: [0.1, 0.4, 0.4], scale: [1, 1.05, 1] }}
                 transition={{ duration: 6, repeat: Infinity }}
-                className="absolute -top-10 -left-10 w-72 h-72 rounded-full bg-gradient-to-tr from-blue-400 to-teal-400 opacity-30 blur-3xl"
-            />
+                className="absolute -top-10 -left-10 w-72 h-72 rounded-full bg-gradient-to-tr from-blue-400 to-teal-400 opacity-10 blur-3xl"
+            /> */}
             <ToastContainer />
         </div>
     );
