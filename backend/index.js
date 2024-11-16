@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 8080;
 // Health Check for Plaid on Startup
 plaidHealthCheck();
 
-// Allow only specific origins
+
 const allowedOrigins = [
   "http://localhost:3000", // Development
   "https://fin-track-lh21.vercel.app", // Frontend in production
