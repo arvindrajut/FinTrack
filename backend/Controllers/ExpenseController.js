@@ -1,4 +1,4 @@
-const UserModel = require("../models/User");
+const UserModel = require("../Models/User");
 const axios = require("axios");
 
 // Fetch all transactions (Plaid API + User transactions)
