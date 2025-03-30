@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 8080;
 plaidHealthCheck();
 
 
-const allowedOrigins = ["http://localhost:3000"];
+const allowedOrigins = ["http://localhost:3000", "https://fin-track-94nk.vercel.app"];
 
 const corsOptions = {
   origin: function (origin, callback) {
