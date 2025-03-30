@@ -7,21 +7,18 @@ const ExpenseRouter = require("./Routes/ExpenseRouter");
 const {
   router: PlaidRouter,
   plaidHealthCheck,
-} = require("./Routes/plaidRouter"); // Import the Plaid router and health check
+} = require("./Routes/PlaidRouter"); 
 const ensureAuthenticated = require("./Middlewares/Auth");
 
 require("dotenv").config();
 require("./Models/db");
 const PORT = process.env.PORT || 8080;
 
-// Health Check for Plaid on Startup
+// Health Check for Plaid
 plaidHealthCheck();
 
 
-const allowedOrigins = [
-  "http://localhost:3000", // Development
-  "https://fin-track-lh21.vercel.app", // Frontend in production
-];
+const allowedOrigins = ["http://localhost:3000"];
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -38,8 +35,8 @@ const corsOptions = {
 app.use(bodyParser.json());
 app.use(cors(corsOptions));
 app.use("/auth", AuthRouter);
-app.use("/expenses", ensureAuthenticated, ExpenseRouter);
-app.use("/plaid", PlaidRouter); // Use the Plaid router
+app.use("/transactions", ExpenseRouter);
+app.use("/plaid", PlaidRouter);
 
 app.listen(PORT, () => {
   console.log(`Server is running on ${PORT}`);

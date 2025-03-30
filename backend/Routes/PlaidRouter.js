@@ -1,22 +1,21 @@
 'use strict';
 
 const express = require('express');
-const { Configuration, PlaidApi, Products, PlaidEnvironments, CraCheckReportProduct } = require('plaid');
+const { Configuration, PlaidApi, Products, PlaidEnvironments } = require('plaid');
 const { v4: uuidv4 } = require('uuid');
 const moment = require('moment');
 const util = require('util');
 require('dotenv').config();
 
-// Environment Variables
 const PLAID_CLIENT_ID = process.env.PLAID_CLIENT_ID;
 const PLAID_SECRET = process.env.PLAID_SECRET;
 const PLAID_ENV = process.env.PLAID_ENV || 'sandbox';
-const PLAID_PRODUCTS = (process.env.PLAID_PRODUCTS || 'transactions').split(',');
+const PLAID_PRODUCTS = (process.env.PLAID_PRODUCTS || 'transactions,liabilities').split(',');
 const PLAID_COUNTRY_CODES = (process.env.PLAID_COUNTRY_CODES || 'US').split(',');
 const PLAID_REDIRECT_URI = process.env.PLAID_REDIRECT_URI || '';
 const PLAID_ANDROID_PACKAGE_NAME = process.env.PLAID_ANDROID_PACKAGE_NAME || '';
 
-// Initialize Plaid Client
+
 const configuration = new Configuration({
   basePath: PlaidEnvironments[PLAID_ENV.toLowerCase()],
   baseOptions: {
@@ -31,12 +30,12 @@ const plaidClient = new PlaidApi(configuration);
 
 const router = express.Router();
 
-// Health Check Function
+
 async function plaidHealthCheck() {
   try {
     console.log('Running Plaid Health Check...');
     const request = {
-      institution_id: 'ins_109508', // Plaid public test institution for Chase Bank
+      institution_id: 'ins_109508', 
       country_codes: PLAID_COUNTRY_CODES,
     };
     const response = await plaidClient.institutionsGetById(request);
@@ -46,7 +45,6 @@ async function plaidHealthCheck() {
   }
 }
 
-// Create Link Token
 router.post('/create_link_token', async (req, res) => {
   try {
     console.log('Creating link token...');
@@ -78,7 +76,6 @@ router.post('/create_link_token', async (req, res) => {
   }
 });
 
-// Exchange Public Token for Access Token
 router.post('/set_access_token', async (req, res) => {
   if (!req.body.public_token) {
     console.error('Public token is missing in request body');
@@ -103,28 +100,68 @@ router.post('/set_access_token', async (req, res) => {
   }
 });
 
-// Get Accounts Information
-router.post('/accounts', async (req, res) => {
+router.post('/transactions', async (req, res) => {
+  try {
+    console.log('Incoming Request Body for /transactions:', req.body);
+
+    if (!req.body.access_token) {
+      console.error('Access token is missing in request body');
+      return res.status(400).json({ error: 'access_token is required' });
+    }
+
+    console.log('Fetching transactions information...');
+    const startDate = moment().subtract(30, 'days').format('YYYY-MM-DD');
+    const endDate = moment().format('YYYY-MM-DD');
+    const transactionsResponse = await plaidClient.transactionsGet({
+      access_token: req.body.access_token,
+      start_date: startDate,
+      end_date: endDate,
+    });
+
+    console.log('Transactions fetched successfully:', transactionsResponse.data);
+    prettyPrintResponse(transactionsResponse);
+
+    const { accounts, transactions, total_transactions } = transactionsResponse.data;
+
+  
+    res.json({
+      accounts,
+      transactions,
+      total_transactions,
+    });
+  } catch (error) {
+    console.error('Error in transactions endpoint:', error.response?.data?.error_message || error.message);
+    res.status(500).json({ error: 'Failed to fetch transactions' });
+  }
+});
+
+router.post('/liabilities', async (req, res) => {
   if (!req.body.access_token) {
     console.error('Access token is missing in request body');
     return res.status(400).json({ error: 'access_token is required' });
   }
 
   try {
-    console.log('Fetching accounts information...');
-    const accountsResponse = await plaidClient.accountsGet({
+    console.log('Fetching liabilities information...');
+    const liabilitiesResponse = await plaidClient.liabilitiesGet({
       access_token: req.body.access_token,
     });
-    console.log('Accounts fetched successfully:', accountsResponse.data);
-    prettyPrintResponse(accountsResponse);
-    res.json(accountsResponse.data);
+
+    console.log('Liabilities fetched successfully:', liabilitiesResponse.data);
+    prettyPrintResponse(liabilitiesResponse);
+
+    const { accounts, liabilities } = liabilitiesResponse.data;
+
+    res.json({
+      accounts,
+      liabilities,
+    });
   } catch (error) {
-    console.error('Error in accounts endpoint:', error.response?.data?.error_message || error.message);
-    res.status(500).json({ error: 'Failed to fetch accounts' });
+    console.error('Error in liabilities endpoint:', error.response?.data?.error_message || error.message);
+    res.status(500).json({ error: 'Failed to fetch liabilities' });
   }
 });
 
-// Pretty Print for Debugging
 const prettyPrintResponse = (response) => {
   console.log(util.inspect(response.data, { colors: true, depth: 4 }));
 };

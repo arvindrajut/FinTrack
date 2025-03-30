@@ -1,26 +1,18 @@
-// const express = require('express');
-// const { getAllTransactions, addTransaction, deleteTransaction} = require('../Controllers/ExpenseController');
-//     // const { adminAuthMiddleware} = require('../Middlewares/AdminAuth')
-// const router = express.Router();
-
-// router.get('/', getAllTransactions);
-// router.post('/', addTransaction);
-// router.delete('/:expenseId', deleteTransaction);
-
-// // router.get('/admin/all', getAllUsersAndExpenses, ); // Only admins can access all transactions
-
-// // router.get('/admin/all', adminAuthMiddleware, getAllUsersAndExpenses); // Admins can access all user transactions
-// module.exports = router;
-
 const express = require('express');
-const { getAllTransactions, addTransaction, deleteTransaction, getAllUsersAndExpenses } = require('../Controllers/ExpenseController');
-const adminAuthMiddleware = require('../Middlewares/AdminAuth');
+const { getAllTransactions, addTransaction, deleteTransaction, getAllUsersAndExpenses } = require('../controllers/ExpenseController');
+const adminAuthMiddleware = require('../middlewares/AdminAuth');
 const router = express.Router();
 
+// Fetch all transactions (Plaid API + User-added transactions)
 router.get('/', getAllTransactions);
-router.post('/', addTransaction);
+
+// Add a cash transaction manually
+router.post('/add', addTransaction);
+
+// Delete a specific transaction by ID
 router.delete('/:expenseId', deleteTransaction);
 
+// Admin route: Fetch all users and expenses
 router.get('/admin/all', adminAuthMiddleware, getAllUsersAndExpenses);
 
 module.exports = router;

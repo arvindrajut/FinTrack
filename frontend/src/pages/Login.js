@@ -51,7 +51,6 @@ function Login({ setIsAuthenticated, setIsAdmin }) {
                 transition={{ duration: 0.5, ease: 'easeOut' }}
                 className="w-full max-w-md p-8 rounded-xl shadow-xl bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white relative overflow-hidden"
             >
-                {/* Custom Background Overlay for Creative Glow Effect */}
                 <div className="absolute inset-0 opacity-30 pointer-events-none bg-gradient-to-tl from-indigo-500 via-blue-500 to-teal-400 rounded-xl blur-lg"></div>
                 
                 <h1 className="text-4xl font-bold text-center text-blue-300 mb-8">Login to Finaura</h1>
@@ -91,7 +90,6 @@ function Login({ setIsAuthenticated, setIsAdmin }) {
                         </Link>
                     </div>
                 </form>
-                {/* Custom Animated Glow Element */}
                 <motion.div 
                     animate={{ opacity: [0.3, 0.6, 0.3], scale: [1, 1.1, 1] }}
                     transition={{ duration: 4, repeat: Infinity }}

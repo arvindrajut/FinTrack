@@ -1,229 +1,117 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { APIUrl, handleError, handleSuccess } from '../utils';
-import { ToastContainer } from 'react-toastify';
+import React, { useRef, useState, useEffect } from 'react';
+import { Parallax } from 'react-parallax';
+import { Typewriter } from 'react-simple-typewriter';
 import { motion } from 'framer-motion';
-import ExpenseTable from './ExpenseTable';
-import ExpenseDetails from './ExpenseDetails';
-import ExpenseForm from './ExpenseForm';
 import Navbar from './Navbar';
 import axios from 'axios';
-import AccountDetails from './AccountDetails';
-import AccountOverview from './AccountOverview';
-import BalanceCard from './BalanceCard';
+import { usePlaidLink } from 'react-plaid-link';
 
-function Home() {
-    const [showAccountOverview, setShowAccountOverview] = useState(false);
-    const [selectedAccount, setSelectedAccount] = useState(null);
-    const [loggedInUser, setLoggedInUser] = useState('');
-    const [expenses, setExpenses] = useState([]);
-    const [incomeAmt, setIncomeAmt] = useState(0);
-    const [expenseAmt, setExpenseAmt] = useState(0);
+function PlaidConnect() {
     const [linkToken, setLinkToken] = useState(null);
-    const [accountDetails, setAccountDetails] = useState([]);
-    const navigate = useNavigate();
+    const [connected, setConnected] = useState(() => {
+        return localStorage.getItem('plaid_connected') === 'true';
+    });
+    const [accessToken, setAccessToken] = useState(localStorage.getItem('access_token') || null);
+    const [updateMode, setUpdateMode] = useState(false);
+    const [error, setError] = useState(null);
 
-    // Fetch expenses data and update the state
-    const fetchExpenses = useCallback(async () => {
-        try {
-            const response = await fetch(`${APIUrl}/expenses`, {
-                headers: { Authorization: localStorage.getItem('token') },
-            });
-            if (response.status === 403) {
-                localStorage.removeItem('token');
-                navigate('/login');
-                return;
-            }
-            const result = await response.json();
-            setExpenses(result.data);
-        } catch (err) {
-            handleError(err);
-        }
-    }, [navigate]);
-
-    // Effect to set logged-in user and fetch initial data
     useEffect(() => {
-        setLoggedInUser(localStorage.getItem('loggedInUser'));
-        fetchExpenses();
-        fetchLinkToken();
-    }, [fetchExpenses]);
-
-    // Fetch Plaid link token for connecting bank accounts
-    const fetchLinkToken = async () => {
-        try {
-            const response = await axios.post(`${APIUrl}/plaid/create_link_token`, null, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
-            });
-            setLinkToken(response.data.link_token);
-        } catch (error) {
-            console.error('Error fetching link token:', error.message);
+        if (!connected) {
+            axios.post('http://localhost:8080/plaid/create_link_token').then((response) => {
+                setLinkToken(response.data.link_token);
+            }).catch(() => setError('Failed to generate link token'));
         }
-    };
+    }, [connected]);
 
-    // Handle success after Plaid connection is completed
-    const handleOnSuccess = useCallback(async (publicToken) => {
-        try {
-            const response = await axios.post(`${APIUrl}/plaid/set_access_token`, {
-                public_token: publicToken,
-            });
-            fetchAccounts(response.data.access_token);
-        } catch (error) {
-            console.error('Error exchanging public token:', error.message);
-        }
-    }, []);
-
-    // Fetch account details after Plaid connection
-    const fetchAccounts = async (accessToken) => {
-        try {
-            const response = await axios.post(`${APIUrl}/plaid/accounts`, {
-                access_token: accessToken,
-            });
-            setAccountDetails(response.data.accounts || []);
-        } catch (error) {
-            console.error('Error fetching accounts:', error.message);
-        }
-    };
-
-    // Effect to handle Plaid link button initialization
-    useEffect(() => {
-        if (linkToken) {
-            const interval = setInterval(() => {
-                if (window.Plaid) {
-                    const handler = window.Plaid.create({
-                        token: linkToken,
-                        onSuccess: (publicToken) => {
-                            handleOnSuccess(publicToken);
-                        },
-                    });
-
-                    const linkButton = document.getElementById('link-button');
-                    if (linkButton) {
-                        linkButton.addEventListener('click', (e) => {
-                            handler.open();
-                        });
-                        clearInterval(interval);
-                    }
+    const { open, ready } = usePlaidLink({
+        token: linkToken,
+        onSuccess: (public_token) => {
+            axios.post('http://localhost:8080/plaid/set_access_token', { public_token }).then((response) => {
+                localStorage.setItem('plaid_connected', 'true');
+                localStorage.setItem('access_token', response.data.access_token);
+                setAccessToken(response.data.access_token);
+                setConnected(true);
+                setUpdateMode(false);
+                setError(null);
+            }).catch((err) => {
+                if (err.response?.data?.error === 'ITEM_LOGIN_REQUIRED') {
+                    setUpdateMode(true);
+                    setError('Authentication required. Please reconnect.');
+                } else {
+                    setError('Error exchanging public token, try again.');
                 }
-            }, 500);
-        }
-    }, [linkToken, handleOnSuccess]);
+            });
+        },
+        onExit: (err) => {
+            if (err) setError('Plaid connection closed unexpectedly.');
+        },
+    });
 
-    // Handle user logout
     const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('loggedInUser');
-        handleSuccess('Logged out successfully');
-        setTimeout(() => navigate('/login'), 1000);
+        localStorage.removeItem('plaid_connected');
+        localStorage.removeItem('access_token');
+        setAccessToken(null);
+        setConnected(false);
     };
-
-    // Effect to calculate income and expense amounts
-    useEffect(() => {
-        const amounts = expenses.map((item) => item.amount);
-        const income = amounts.filter((item) => item > 0).reduce((acc, item) => acc + item, 0);
-        const exp = amounts.filter((item) => item < 0).reduce((acc, item) => acc + item, 0) * -1;
-        setIncomeAmt(income);
-        setExpenseAmt(exp);
-    }, [expenses]);
-
-    // Handle expense deletion
-    const deleteExpense = async (id) => {
-        try {
-            const response = await fetch(`${APIUrl}/expenses/${id}`, {
-                method: 'DELETE',
-                headers: { Authorization: localStorage.getItem('token') },
-            });
-            if (response.status === 403) {
-                localStorage.removeItem('token');
-                navigate('/login');
-                return;
-            }
-            const result = await response.json();
-            handleSuccess(result?.message);
-            setExpenses(result.data);
-        } catch (err) {
-            handleError(err);
-        }
-    };
-
-    // Handle adding a new transaction
-    const addTransaction = async (data) => {
-        try {
-            const response = await fetch(`${APIUrl}/expenses`, {
-                method: 'POST',
-                headers: {
-                    Authorization: localStorage.getItem('token'),
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data),
-            });
-            if (response.status === 403) {
-                localStorage.removeItem('token');
-                navigate('/login');
-                return;
-            }
-            const result = await response.json();
-            handleSuccess(result?.message);
-            setExpenses(result.data);
-        } catch (err) {
-            handleError(err);
-        }
-    };
-
-    const totalBankBalance = accountDetails.reduce((acc, account) => acc + (account.balances.available || 0), 0);
 
     return (
-        <div className="min-h-screen flex flex-col overflow-y-auto bg-gradient-to-br from-indigo-900 via-gray-900 to-black">
-            <Navbar onLogout={handleLogout} />
-            <div className="flex flex-col lg:flex-row items-center lg:items-start lg:justify-around space-y-10 lg:space-y-0 lg:space-x-10 p-10">
-                <div className="flex flex-col items-center lg:items-start space-y-8 w-full max-w-4xl">
-                    <motion.h1 
-                        initial={{ opacity: 0, y: -30 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="text-5xl font-bold text-pink-400 tracking-wide"
-                    >
-                        Welcome, {loggedInUser}
-                    </motion.h1>
-                    <BalanceCard
-                        availableBalance={incomeAmt - expenseAmt + totalBankBalance}
-                        currentBalance={incomeAmt}
-                        currencyCode="USD"
-                    />
-                    {accountDetails.length > 0 ? (
-                        <AccountDetails accounts={accountDetails} onAccountClick={(account) => { setSelectedAccount(account); setShowAccountOverview(true); }} />
-                    ) : (
-                        <button
-                            id="link-button"
-                            className="w-full lg:w-auto bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold p-4 rounded-lg shadow-lg hover:from-purple-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-pink-400 transform transition hover:scale-105"
-                            disabled={!linkToken}
-                        >
-                            Connect to Bank
-                        </button>
-                    )}
-                    <ExpenseForm addTransaction={addTransaction} />
+        <div className="text-center mt-6">
+            {!connected ? (
+                <button 
+                    onClick={() => open()} 
+                    disabled={!ready} 
+                    className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-700"
+                >
+                    {updateMode ? 'Reconnect to Bank' : 'Connect to Bank'}
+                </button>
+            ) : (
+                <div className="flex flex-col items-center">
+                    <div className="bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg">Connected to Bank</div>
+                    <button onClick={handleLogout} className="mt-4 text-red-500">Logout</button>
                 </div>
-                <div className="flex flex-col items-center lg:items-start space-y-8 w-full max-w-4xl">
-                    <ExpenseTable expenses={expenses} deleteExpense={deleteExpense} />
-                </div>
-            </div>
-            {showAccountOverview && selectedAccount && (
-                <AccountOverview account={selectedAccount} onClose={() => setShowAccountOverview(false)} />
             )}
-            {/* Custom Animated Glow Elements */}
-            <motion.div 
-                animate={{ opacity: [0.1, 0.4, 0.3], scale: [1, 1.1, 1] }}
-                transition={{ duration: 4, repeat: Infinity }}
-                className="absolute -bottom-12 -right-12 w-80 h-80 rounded-full bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 opacity-10 blur-2xl"
-            />
-            {/* <motion.div 
-                animate={{ opacity: [0.1, 0.4, 0.4], scale: [1, 1.05, 1] }}
-                transition={{ duration: 6, repeat: Infinity }}
-                className="absolute -top-10 -left-10 w-72 h-72 rounded-full bg-gradient-to-tr from-blue-400 to-teal-400 opacity-10 blur-3xl"
-            /> */}
-            <ToastContainer />
+            {error && (
+                <div className="text-red-500 mt-4">{error}</div>
+            )}
         </div>
+    );
+}
+
+function Home() {
+    return (
+        <motion.div 
+            className="relative min-h-screen flex flex-col"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
+        >
+            <Navbar />
+            <Parallax
+                bgImage="https://source.unsplash.com/1600x900/?finance,technology"
+                strength={500}
+                className="min-h-screen flex items-center justify-center text-center bg-cover bg-center"
+            >
+                <motion.div 
+                    className="relative bg-black bg-opacity-50 p-10 rounded-lg z-10 shadow-lg"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ duration: 1, delay: 0.5 }}
+                >
+                    <h1 className="text-6xl font-bold text-purple-400">
+                        Welcome to <span className="text-white">Finaura</span>
+                    </h1>
+                    <Typewriter
+                        words={["Your Financial Companion.", "Manage Your Expenses.", "Plan Your Savings.", "Achieve Your Financial Goals."]}
+                        loop
+                        cursor
+                        cursorStyle="_"
+                        typeSpeed={40}
+                        deleteSpeed={50}
+                    />
+                    <PlaidConnect />
+                </motion.div>
+            </Parallax>
+        </motion.div>
     );
 }
 

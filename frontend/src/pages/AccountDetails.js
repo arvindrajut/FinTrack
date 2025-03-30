@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { motion } from 'framer-motion';
 
-function AccountDetails({ accounts, onAccountClick }) {
+function AccountDetails({ accounts = [], onAccountClick }) {
     useEffect(() => {
         const linkButton = document.getElementById('link-button');
         if (linkButton) {
@@ -34,7 +34,7 @@ function AccountDetails({ accounts, onAccountClick }) {
                     >
                         <h3 className="text-2xl font-bold mb-2">{account.name || 'Unnamed Account'}</h3>
                         <p className="text-lg">Type: {account.type}</p>
-                        <p className="text-lg">Balance: ${account.balances.available ? account.balances.available.toFixed(2) : '0.00'}</p>
+                        <p className="text-lg">Balance: ${account.balances.available ? account.balances.available : '0.00'}</p>
                         <p className="text-sm text-gray-300 mt-2">Institution: {account.institution || 'Unknown'}</p>
                     </motion.div>
                 ))}

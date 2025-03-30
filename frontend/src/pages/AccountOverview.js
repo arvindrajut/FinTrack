@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-function AccountOverview({ account, onClose }) {
+function AccountOverview({ account = [], onClose }) {
     if (!account) return null;
 
     const { name, official_name, persistent_account_id, subtype, type, balances } = account;
@@ -45,11 +45,11 @@ function AccountOverview({ account, onClose }) {
                         </div>
                         <div>
                             <span className="block text-gray-400 text-sm">Available Balance</span>
-                            <span className="block text-2xl font-bold">{iso_currency_code} {available.toFixed(2)}</span>
+                            <span className="block text-2xl font-bold">{iso_currency_code} {available}</span>
                         </div>
                         <div>
                             <span className="block text-gray-400 text-sm">Current Balance</span>
-                            <span className="block text-2xl font-bold">{iso_currency_code} {current.toFixed(2)}</span>
+                            <span className="block text-2xl font-bold">{iso_currency_code} {current}</span>
                         </div>
                         <div className="col-span-2">
                             <span className="block text-gray-400 text-sm">Persistent Account ID</span>
@@ -58,7 +58,6 @@ function AccountOverview({ account, onClose }) {
                     </div>
                 </div>
 
-                {/* Animated Accent Elements */}
                 <motion.div 
                     animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.05, 1] }}
                     transition={{ duration: 3, repeat: Infinity }}
